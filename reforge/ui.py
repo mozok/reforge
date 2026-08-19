@@ -28,6 +28,7 @@ class REFORGE_PT_panel(bpy.types.Panel):
             col.separator()
             col.prop(s, "export_visible_only")
             col.prop(s, "export_textures")
+            col.prop(s, "export_at_world_origin")
             col.prop(s, "default_material")
             col.separator()
             col.operator("reforge.generate", icon="EXPORT")

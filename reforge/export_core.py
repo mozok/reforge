@@ -92,6 +92,22 @@ def _material_prop_int(mat, key: str, default: int) -> int:
         return default
 
 
+def export_prototype_glb(context, obj, abs_path: str):
+    """Export one object's GLB, optionally removing its world translation."""
+    select_only(obj)
+
+    if not context.scene.reforge_settings.export_at_world_origin:
+        export_glb_selected(abs_path)
+        return
+
+    original_matrix_world = obj.matrix_world.copy()
+    try:
+        obj.matrix_world.translation = (0.0, 0.0, 0.0)
+        export_glb_selected(abs_path)
+    finally:
+        obj.matrix_world = original_matrix_world
+
+
 def export_single_prototype_assets(context, obj) -> str:
     """
     Export assets for ONE prototype:
@@ -156,8 +172,7 @@ def export_single_prototype_assets(context, obj) -> str:
     safe_remove_file(os.path.join(abs_collisions, f"{proto}.collisionobject"))
 
     # export GLB from selection
-    select_only(obj)
-    export_glb_selected(abs_glb)
+    export_prototype_glb(context, obj, abs_glb)
 
     # build .model material blocks
     blocks = []
@@ -255,8 +270,9 @@ def export_all_prototypes_assets_no_scene(context) -> int:
 
     n = 0
     for proto in sorted(groups.keys()):
-        # export only "etalon" mesh for this proto
-        export_single_prototype_assets(context, groups[proto][0])
+        # export only the first object by name as the etalon mesh for this proto
+        etalon = min(groups[proto], key=lambda obj: obj.name)
+        export_single_prototype_assets(context, etalon)
         n += 1
     return n
 
@@ -300,7 +316,8 @@ def run_export_scene(context) -> str:
     # ensure all prototypes are exported; create .go once
     proto_to_go = {}
     for proto, objs in groups.items():
-        export_single_prototype_assets(context, objs[0])
+        etalon = min(objs, key=lambda obj: obj.name)
+        export_single_prototype_assets(context, etalon)
         proto_to_go[proto] = f"/{s.prefabs_dir}/{proto}.go".replace("\\", "/")
 
     # create instance list per proto
