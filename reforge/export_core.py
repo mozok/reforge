@@ -123,7 +123,7 @@ def _asset_directories(settings):
 
 def _material_slots(obj):
     try:
-        return list(obj.data.materials) if obj and obj.data else []
+        return [slot.material for slot in obj.material_slots] if obj else []
     except Exception:
         return []
 
@@ -306,11 +306,14 @@ def export_variant_assets(context, selected_objects):
     objects_by_name = {obj.name: obj for obj in mesh_objects}
     selection_data = []
     for obj in mesh_objects:
+        material_slots = _material_slots(obj)
         selection_data.append({
             "name": obj.name,
             "geometry_signature": (len(obj.data.vertices), len(obj.data.polygons)),
-            "material_slots": tuple(
-                mat.name if mat else None for mat in _material_slots(obj)
+            "material_slots": tuple(mat.name if mat else None for mat in material_slots),
+            "bake_enabled": any(
+                _material_prop_bool(mat, "bake_color_texture")
+                for mat in material_slots
             ),
         })
 
@@ -373,7 +376,6 @@ def export_variant_assets(context, selected_objects):
     return {
         "sets": len(plan),
         "variants": sum(len(item["variants"]) for item in plan),
-        # Kept for the later warning-presentation issue; issue 02 reports counts only.
         "warnings": [warning for item in plan for warning in item["warnings"]],
     }
 

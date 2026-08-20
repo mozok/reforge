@@ -189,10 +189,14 @@ class REFORGE_OT_export_variants(bpy.types.Operator):
     def execute(self, context):
         try:
             result = export_variant_assets(context, list(context.selected_objects))
-            self.report(
-                {'INFO'},
-                f"Exported variant sets: {result['sets']} | variants: {result['variants']}",
+            message = (
+                f"Exported variant sets: {result['sets']} | variants: {result['variants']}"
             )
+            if result["warnings"]:
+                message += " | Warnings: " + "; ".join(result["warnings"])
+                self.report({'WARNING'}, message)
+            else:
+                self.report({'INFO'}, message)
             return {'FINISHED'}
         except Exception as e:
             self.report({'ERROR'}, str(e))

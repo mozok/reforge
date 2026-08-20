@@ -46,10 +46,11 @@ def _find_output_collisions(plan):
 def plan_variant_export(objects):
     """Return an export plan for plain selection records.
 
-    Each input record has ``name``, ``geometry_signature`` and an ordered
-    ``material_slots`` sequence.  Material entries may be names or ``None``.
-    Variant material blocks always use etalon names and identify the variant
-    material to resolve by slot index.
+    Each input record has ``name``, ``geometry_signature``, an ordered
+    ``material_slots`` sequence, and whether any of its materials has baking
+    enabled. Material entries may be names or ``None``. Variant material blocks
+    always use etalon names and identify the variant material to resolve by slot
+    index.
     """
     groups = {}
     for item in objects:
@@ -60,6 +61,7 @@ def plan_variant_export(objects):
             "model_name": model_name,
             "geometry_signature": tuple(item["geometry_signature"]),
             "material_slots": tuple(item.get("material_slots", ())),
+            "bake_enabled": bool(item.get("bake_enabled", False)),
         }
         groups.setdefault(base_name, []).append(record)
 
@@ -95,6 +97,12 @@ def plan_variant_export(objects):
                 "texture_prefix": f"{record['model_name']}__",
                 "materials": materials,
             })
+
+        if any(record["bake_enabled"] for record in records):
+            warnings.append(
+                f"variant set {base_name!r}: material baking is enabled; "
+                "baking is skipped for variant exports"
+            )
 
         plan.append({
             "base_name": base_name,
