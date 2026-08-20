@@ -40,6 +40,8 @@ class REFORGE_PT_panel(bpy.types.Panel):
             col.separator()
             col.operator("reforge.export_selected_prototype", icon="EXPORT")
             col.operator("reforge.export_all_prototypes", icon="EXPORT")
+            col.separator()
+            col.operator("reforge.export_variants", icon="EXPORT")
 
         box = layout.box()
         if draw_foldout_header(box, s, "show_folders"):
