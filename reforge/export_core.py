@@ -295,7 +295,7 @@ def export_single_prototype_assets(context, obj) -> str:
 
 
 def export_variant_assets(context, selected_objects):
-    """Export one shared GLB per set plus one model and model-only prefab per variant."""
+    """Export one shared mesh and optional collision pair plus a model and prefab per variant."""
     mesh_objects = [obj for obj in selected_objects if obj and obj.type == "MESH"]
     if not mesh_objects:
         raise RuntimeError("No mesh objects selected.")
@@ -319,20 +319,29 @@ def export_variant_assets(context, selected_objects):
 
     ensure_dir(dirs["models"])
     ensure_dir(dirs["prefabs"])
+    ensure_dir(dirs["collisions"])
     if s.export_textures:
         ensure_dir(dirs["textures"])
 
     for variant_set in plan:
         shared_mesh_name = variant_set["shared_mesh_name"]
+        etalon = objects_by_name[variant_set["etalon_name"]]
         glb_filename = f"{shared_mesh_name}.glb"
         abs_glb = os.path.join(dirs["models"], glb_filename)
         glb_project_path = f"/{s.models_dir}/{glb_filename}".replace("\\", "/")
 
+        # Match ordinary export cleanup timing so stale collision files are
+        # removed even when the following GLB export fails.
         safe_remove_file(abs_glb)
-        export_prototype_glb(
-            context,
-            objects_by_name[variant_set["etalon_name"]],
-            abs_glb,
+        safe_remove_file(os.path.join(dirs["collisions"], f"{shared_mesh_name}.convexshape"))
+        safe_remove_file(os.path.join(dirs["collisions"], f"{shared_mesh_name}.collisionobject"))
+        export_prototype_glb(context, etalon, abs_glb)
+
+        collisionobject_project_path = _export_collision_assets(
+            s,
+            etalon,
+            shared_mesh_name,
+            dirs["collisions"],
         )
 
         for variant in variant_set["variants"]:
@@ -355,7 +364,11 @@ def export_variant_assets(context, selected_objects):
 
             model_project_path = f"/{s.models_dir}/{model_filename}".replace("\\", "/")
             abs_go = os.path.join(dirs["prefabs"], f"{variant['model_name']}.go")
-            _create_prefab_once(abs_go, model_project_path, None)
+            _create_prefab_once(
+                abs_go,
+                model_project_path,
+                collisionobject_project_path,
+            )
 
     return {
         "sets": len(plan),
