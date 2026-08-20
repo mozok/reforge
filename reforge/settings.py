@@ -17,6 +17,11 @@ class ReforgeSettings(bpy.types.PropertyGroup):
 
     export_visible_only: BoolProperty(name="Export Visible Only", default=True)
     export_textures: BoolProperty(name="Export Textures to Defold Project", default=True)
+    export_at_world_origin: BoolProperty(
+        name="Export at World Origin",
+        description="Zero the mesh's world location while preserving its rotation, scale, and shear",
+        default=False,
+    )
 
     default_material: StringProperty(name="Default Material", default=BUILTIN_DEFAULT_DEFOLD_MATERIAL)
 

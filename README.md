@@ -45,6 +45,20 @@ The Reforge panel will appear in:
 - Export only assets (GLB + .model + convex collision files) without touching the `.collection`.
 - Useful when you updated a mesh/materials/textures and want to refresh only one prototype.
 
+### Export Variants
+Use **Export Variants** in **Quick Export** when selected meshes share geometry but need different textures. Names ending in `.NNN` form a set: `Cube`, `Cube.001`, and `Cube.002`. The first name alphabetically is the etalon and supplies the shared mesh and collision.
+
+That example exports:
+- shared `Cube.glb` and, when enabled, `Cube.convexshape`/`Cube.collisionobject`
+- `Cube.model`, `Cube_001.model`, and `Cube_002.model`
+- create-once prefabs `Cube.go`, `Cube_001.go`, and `Cube_002.go`
+- prefixed copied textures such as `Cube_001__color.png`; ordinary prototype textures are not prefixed
+
+Models share the etalon mesh and match each variant's materials by slot. Baking is skipped; geometry or slot-count differences produce non-fatal warnings. Add the generated prefabs to a Defold collection manually. **Generate Scene does not support variants:** duplicate detection collapses the set to the etalon model and texture.
+
+### Export at World Origin
+Enable **Export at World Origin** in the **Export** section to zero only world location during any mesh export. Rotation, scale, negative scale, and shear are preserved, and the original transform is restored afterward. It defaults to off for compatibility with existing projects; enable it for new projects.
+
 ### Multi-material `.model`
 - For each prototype, the exporter creates a `.model` file with **one `materials {}` block per Blender material slot** (unique materials, in slot order).
 - Material matching uses the **Blender material name** (must match the material name in the exported GLB).

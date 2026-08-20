@@ -73,7 +73,11 @@ def find_basecolor_image_from_material(mat: bpy.types.Material):
                     pass
     return None
 
-def export_image_to_defold_project(image: bpy.types.Image, textures_abs_dir: str) -> Optional[str]:
+def export_image_to_defold_project(
+    image: bpy.types.Image,
+    textures_abs_dir: str,
+    filename_prefix: str = "",
+) -> Optional[str]:
     if not image:
         return None
     ensure_dir(textures_abs_dir)
@@ -89,6 +93,7 @@ def export_image_to_defold_project(image: bpy.types.Image, textures_abs_dir: str
     else:
         filename = sanitize_id(image.name) + ".png"
 
+    filename = f"{filename_prefix}{filename}"
     dst_abs = os.path.join(textures_abs_dir, filename)
 
     try:
@@ -108,6 +113,7 @@ def resolve_defold_material_and_texture_for_material(
     abs_textures_dir: str,
     textures_dir_project: str,
     obj: Optional[bpy.types.Object] = None,
+    texture_filename_prefix: str = "",
 ) -> Tuple[str, str, str]:
     # material name in .model must match glTF material name
     mat_name = mat.name if (mat and mat.name) else "default"
@@ -136,7 +142,11 @@ def resolve_defold_material_and_texture_for_material(
         img = find_basecolor_image_from_material(mat) if mat else None
         if img:
             if settings.export_textures:
-                saved_name = export_image_to_defold_project(img, abs_textures_dir)
+                saved_name = export_image_to_defold_project(
+                    img,
+                    abs_textures_dir,
+                    filename_prefix=texture_filename_prefix,
+                )
                 if saved_name:
                     defold_tex_path = f"/{textures_dir_project}/{saved_name}".replace("\\", "/")
             else:

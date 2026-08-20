@@ -1,13 +1,14 @@
 import bpy
-import re
 
 from .export_core import (
     run_export_scene,
     export_single_prototype_assets,
     export_all_prototypes_assets_no_scene,
+    export_variant_assets,
 )
 from .materials import ensure_material_props
-from .utils import is_object_visible, sanitize_id
+from .naming import sanitize_id, split_duplicate_suffix
+from .utils import is_object_visible
 
 # Keys to clear (exporter-created)
 OBJECT_EXPORT_KEYS = ("defold_prototype", "defold_collision", "collision_group", "collision_mask")
@@ -23,9 +24,6 @@ MATERIAL_EXPORT_KEYS = (
 # ------------------------------------------------------------
 # Duplicate name detection (.001/.002 -> base)
 # ------------------------------------------------------------
-_DUPLICATE_SUFFIX_RE = re.compile(r"^(.*)\.\d{3}$")
-
-
 def compute_prototype_name(obj_name: str, detect_duplicates: bool) -> str:
     """
     If detect_duplicates is enabled:
@@ -37,9 +35,7 @@ def compute_prototype_name(obj_name: str, detect_duplicates: bool) -> str:
     """
     base = obj_name
     if detect_duplicates:
-        m = _DUPLICATE_SUFFIX_RE.match(obj_name)
-        if m:
-            base = m.group(1)
+        base, _suffix = split_duplicate_suffix(obj_name)
     return sanitize_id(base)
 
 
@@ -178,6 +174,29 @@ class REFORGE_OT_export_selected_prototype(bpy.types.Operator):
                 raise RuntimeError("No active object selected.")
             proto = export_single_prototype_assets(context, obj)
             self.report({'INFO'}, f"Exported prototype: {proto}")
+            return {'FINISHED'}
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+
+
+class REFORGE_OT_export_variants(bpy.types.Operator):
+    """Export selected mesh variants as shared meshes, models, and prefabs."""
+    bl_idname = "reforge.export_variants"
+    bl_label = "Export Variants"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        try:
+            result = export_variant_assets(context, list(context.selected_objects))
+            message = (
+                f"Exported variant sets: {result['sets']} | variants: {result['variants']}"
+            )
+            if result["warnings"]:
+                message += " | Warnings: " + "; ".join(result["warnings"])
+                self.report({'WARNING'}, message)
+            else:
+                self.report({'INFO'}, message)
             return {'FINISHED'}
         except Exception as e:
             self.report({'ERROR'}, str(e))
@@ -341,6 +360,7 @@ class REFORGE_OT_clear_all(bpy.types.Operator):
 _CLASSES = (
     REFORGE_OT_generate,
     REFORGE_OT_export_selected_prototype,
+    REFORGE_OT_export_variants,
     REFORGE_OT_export_all_prototypes,
     REFORGE_OT_set_selected,
     REFORGE_OT_set_visible,
