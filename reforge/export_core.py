@@ -295,7 +295,7 @@ def export_single_prototype_assets(context, obj) -> str:
 
 
 def export_variant_assets(context, selected_objects):
-    """Export one shared GLB per selected variant set and one model per variant."""
+    """Export one shared GLB per set plus one model and model-only prefab per variant."""
     mesh_objects = [obj for obj in selected_objects if obj and obj.type == "MESH"]
     if not mesh_objects:
         raise RuntimeError("No mesh objects selected.")
@@ -318,6 +318,7 @@ def export_variant_assets(context, selected_objects):
     plan = plan_variant_export(selection_data)
 
     ensure_dir(dirs["models"])
+    ensure_dir(dirs["prefabs"])
     if s.export_textures:
         ensure_dir(dirs["textures"])
 
@@ -343,13 +344,18 @@ def export_variant_assets(context, selected_objects):
                 material_bindings=variant["materials"],
                 texture_filename_prefix=variant["texture_prefix"],
             )
-            abs_model = os.path.join(dirs["models"], f"{variant['model_name']}.model")
+            model_filename = f"{variant['model_name']}.model"
+            abs_model = os.path.join(dirs["models"], model_filename)
             _write_model_asset(
                 abs_model,
                 glb_project_path,
                 variant["model_name"],
                 blocks,
             )
+
+            model_project_path = f"/{s.models_dir}/{model_filename}".replace("\\", "/")
+            abs_go = os.path.join(dirs["prefabs"], f"{variant['model_name']}.go")
+            _create_prefab_once(abs_go, model_project_path, None)
 
     return {
         "sets": len(plan),

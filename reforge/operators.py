@@ -181,7 +181,7 @@ class REFORGE_OT_export_selected_prototype(bpy.types.Operator):
 
 
 class REFORGE_OT_export_variants(bpy.types.Operator):
-    """Export selected mesh variants as shared meshes and per-variant models."""
+    """Export selected mesh variants as shared meshes, models, and prefabs."""
     bl_idname = "reforge.export_variants"
     bl_label = "Export Variants"
     bl_options = {'REGISTER', 'UNDO'}
